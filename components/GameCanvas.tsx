@@ -38,13 +38,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ player, items, gameLength }) =>
   const videoCanvasRef = useRef<HTMLCanvasElement>(null);
   const animationIdRef = useRef<number>();
   // 扩宽赛道，延长赛道
+  // 游戏主画布调大，龙舟等比例缩放
   const CANVAS_WIDTH = 1200;
-  const CANVAS_HEIGHT = 1800;
-  const BOAT_WIDTH = 320;
-  const BOAT_HEIGHT = 180;
+  const CANVAS_HEIGHT = 900;
+  const BOAT_WIDTH = 180;
+  const BOAT_HEIGHT = 90;
   const [players, setPlayers] = useState<PlayerState[]>([
-    { x: 400, y: 1700, color: "#ff5722", name: "玩家1", score: 0 },
-    { x: 800, y: 1700, color: "#3f51b5", name: "玩家2", score: 0 },
+    { x: CANVAS_WIDTH * 0.25, y: CANVAS_HEIGHT - 100, color: "#ff5722", name: "玩家1", score: 0 },
+    { x: CANVAS_WIDTH * 0.75, y: CANVAS_HEIGHT - 100, color: "#3f51b5", name: "玩家2", score: 0 },
   ]);
   const [gameInterval, setGameInterval] = useState<NodeJS.Timeout | null>(null);
   const [gameStatus, setGameStatus] = useState<"ready" | "countdown" | "playing" | "finished">("ready");
@@ -68,8 +69,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ player, items, gameLength }) =>
   useEffect(() => {
     let isMounted = true;
     const video = videoRef.current;
-    video.width = 1600;
-    video.height = 1200;
+    video.width = 800;
+    video.height = 600;
     video.style.display = 'none';
     document.body.appendChild(video);
 
@@ -83,7 +84,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ player, items, gameLength }) =>
 
       async function setupCamera() {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1600, height: 1200 },
+          video: { width: 800, height: 600 },
           audio: false,
         });
         video.srcObject = stream;
@@ -196,6 +197,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ player, items, gameLength }) =>
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.stroke();
+// 可视化分界线
+ctx.save();
+ctx.strokeStyle = 'red';
+ctx.lineWidth = 4;
+ctx.beginPath();
+ctx.moveTo(videoCanvas.width / 2, 0);
+ctx.lineTo(videoCanvas.width / 2, videoCanvas.height);
+ctx.stroke();
+ctx.restore();
+
+// 区域文字提示
+ctx.font = 'bold 22px Arial';
+ctx.fillStyle = players[0].color;
+ctx.textAlign = 'left';
+ctx.fillText('玩家1区域', 20, 40);
+ctx.fillStyle = players[1].color;
+ctx.textAlign = 'right';
+ctx.fillText('玩家2区域', videoCanvas.width - 20, 40);
 
             ctx.font = '24px "Bubblegum Sans", cursive';
             ctx.lineWidth = 4;
@@ -220,13 +239,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ player, items, gameLength }) =>
         }
 
         // TensorFlow.js MoveNet真实检测
-        const poses = await detectorRef.current.estimatePoses(video);
+        const poses: any[] = await detectorRef.current.estimatePoses(video);
+        // 调试输出所有检测到的pose鼻子x坐标
+        if (poses && poses.length > 0) {
+          console.log('所有pose鼻子x坐标:', poses.map((p: any) => p.keypoints && p.keypoints[0] && p.keypoints[0].x));
+        }
 
         if (poses && poses.length > 0) {
+          // 区域分配：左半区域分配给玩家1，右半区域分配给玩家2
+          const width = video.width;
+          let found = [false, false];
           poses.forEach((pose: any) => {
-            // 摄像头画面是镜像的，实际左侧人物 keypoints[0].x 较大
-            const playerIndex = pose.keypoints[0].x > video.width / 2 ? 0 : 1;
-            detectRunningMotion(pose.keypoints, playerIndex);
+            if (!pose.keypoints || typeof pose.keypoints[0].x !== 'number') return;
+            const x = pose.keypoints[0].x;
+            // 注意：摄像头画面做了镜像，视觉左侧x较大，右侧x较小
+            if (x > width / 2 && !found[0]) {
+              detectRunningMotion(pose.keypoints, 0); // 视觉左侧，玩家1
+              found[0] = true;
+            } else if (x <= width / 2 && !found[1]) {
+              detectRunningMotion(pose.keypoints, 1); // 视觉右侧，玩家2
+              found[1] = true;
+            }
           });
         } else {
           playerMotions.current.forEach((motion, index) => {
@@ -442,9 +475,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ player, items, gameLength }) =>
             }}
             onClick={() => {
               setPlayers([
-                { x: 400, y: 1700, color: "#ff5722", name: "玩家1", score: 0 },
-                { x: 800, y: 1700, color: "#3f51b5", name: "玩家2", score: 0 },
+                { x: CANVAS_WIDTH * 0.25, y: CANVAS_HEIGHT - 100, color: "#ff5722", name: "玩家1", score: 0 },
+                { x: CANVAS_WIDTH * 0.75, y: CANVAS_HEIGHT - 100, color: "#3f51b5", name: "玩家2", score: 0 },
               ]);
+              // 重置动作状态
+              playerMotions.current = [
+                { lastKneeY: 0, lastElbowY: 0, motionCount: 0, lastMotionTime: 0, motionFrequency: 0 },
+                { lastKneeY: 0, lastElbowY: 0, motionCount: 0, lastMotionTime: 0, motionFrequency: 0 },
+              ];
+              setMotionFrequencies([0, 0]);
               setWinner(null);
               setShowVictoryModal(false);
               setGameStatus("countdown");
