@@ -1,0 +1,77 @@
+/* 引入像素风/Q版字体 */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&display=swap');
+
+/* 定义卡通文字样式 */
+.cartoon-text {
+  font-family: 'VT323', monospace;
+  color: #333;
+  letter-spacing: 1px;
+  line-height: 1.5;
+  font-size: 20px;
+  image-rendering: pixelated;
+}
+
+.cartoon-title {
+  font-family: 'Press Start 2P', cursive;
+  letter-spacing: 2px;
+  color: #ff5722;
+  display: inline-block;
+  padding: 5px 10px;
+  image-rendering: pixelated;
+  line-height: 1.4;
+}
+
+.cartoon-score {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: #388e3c;
+  background: #c8e6c9;
+  padding: 5px 10px;
+  border: 4px solid #a5d6a7;
+  display: inline-block;
+  image-rendering: pixelated;
+}
+
+.cartoon-button {
+  font-family: 'Press Start 2P', cursive;
+  background-color: #ff9800;
+  border: 4px solid #e65100;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.1s;
+  letter-spacing: 1px;
+  image-rendering: pixelated;
+}
+
+.cartoon-button:hover {
+  background-color: #ffb74d;
+  transform: translateY(2px);
+}
+
+.cartoon-button:active {
+  transform: translateY(4px);
+  background-color: #f57c00;
+}
+
+/* 添加新的像素风容器样式 */
+.cartoon-container {
+  background-color: #fff8e1;
+  border: 6px solid #ffcc80;
+  padding: 20px;
+  position: relative;
+  image-rendering: pixelated;
+}
+
+/* 添加像素风标签样式 */
+.cartoon-label {
+  font-family: 'Silkscreen', cursive;
+  background-color: #3f51b5;
+  color: white;
+  padding: 5px 10px;
+  display: inline-block;
+  margin-right: 10px;
+  border: 3px solid #1a237e;
+  image-rendering: pixelated;
+}
